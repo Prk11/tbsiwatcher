@@ -6,6 +6,9 @@
 package ua.od.psrv.tbsiwatcher.commands;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Chat;
@@ -13,6 +16,7 @@ import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.bots.AbsSender;
 import org.telegram.telegrambots.bots.commands.BotCommand;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
+import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.logging.BotLogger;
 import ua.od.psrv.tbsiwatcher.Application;
 import ua.od.psrv.tbsiwatcher.SiwatcherManager;
@@ -37,7 +41,9 @@ public class ListCommand extends BotCommand {
         try {
             String UserId = Application.databaseManager.getSiwatcherUserId(chat.getId());
             Set<ListResponseObject> list = SiwatcherManager.getResponse(UserId, false);
-            for (ListResponseObject listResponseObject : list) {
+            List<ListResponseObject> listAsList = new ArrayList<>(list);
+            Collections.sort(listAsList);
+            for (ListResponseObject listResponseObject : listAsList) {
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setChatId(chat.getId().toString());
                 try {
@@ -54,7 +60,44 @@ public class ListCommand extends BotCommand {
                         absSender.sendMessage(sendMessage);
                     } catch (TelegramApiException ex1) {
                         BotLogger.error(LOGTAG, ex1);
+                        if (ex1 instanceof TelegramApiRequestException) {
+                            try {
+                                sendMessage.enableMarkdown(false);
+                                String userMessage = "Ошибка вывода сообщения:\n" ;
+                                userMessage+="Событие: "+listResponseObject.getEvent().toString()+"\n";
+                                userMessage+="Автор: "+listResponseObject.getAuthor();                       
+                                sendMessage.setText(userMessage);
+                                absSender.sendMessage(sendMessage);
+                                
+                                sendMessage = new SendMessage();
+                                sendMessage.enableMarkdown(false);
+                                sendMessage.setChatId(Application.databaseManager.getChatIdForAdmin());
+                                String adminMessage = "Ошибка вывода сообщения:\n" ;
+                                adminMessage+="Пользователь: "+UserId+"\n";
+                                adminMessage+="Событие: "+listResponseObject.getEvent().toString()+"\n";
+                                adminMessage+="Автор: "+listResponseObject.getAuthor()+"\n";                          
+                                adminMessage+="Код ошибки: "+((TelegramApiRequestException) ex1).getErrorCode().toString()+"\n";                          
+                                adminMessage+="Текст ошибки: "+((TelegramApiRequestException) ex1).getMessage()+"\n";                          
+                                sendMessage.setText(adminMessage);
+                                absSender.sendMessage(sendMessage);
+                             }
+                            catch (TelegramApiException ex2) {
+                                BotLogger.error(LOGTAG, ex2);
+                            }
+                        }
                     }
+                 }
+            }
+            if (list.isEmpty()) {
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chat.getId().toString());
+                try {
+                    sendMessage.enableMarkdown(false);
+                    sendMessage.setText("Обновлений нет!");
+                    absSender.sendMessage(sendMessage);
+                }
+                catch (TelegramApiException ex) {
+                   BotLogger.error(LOGTAG, ex); 
                 }
             }
         } catch (InterruptedException ex) {

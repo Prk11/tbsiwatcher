@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.telegram.telegrambots.logging.BotLogger;
@@ -126,14 +127,17 @@ public class DatabaseManager {
             ResultSet rs = statmt.executeQuery("select u.user_id, u.chat_id from users u inner join settings s on (u.id=s.userid) where ([key]='subscribe') and ([valuekey]='true')");
             while (rs.next()) {
                 Set<ListResponseObject> list=null;
+                List<ListResponseObject> listAsList=null;
                 try {
                     list = SiwatcherManager.getResponse(rs.getString(1), true);
+                    listAsList = new ArrayList<>(list);
+                    Collections.sort(listAsList);
                 } catch (SQLException ex) {
                     BotLogger.error(LOGTAG, ex);
                     if (this.eventSendText!=null)
                         this.eventSendText.onSendMessage(rs.getLong(2), "Не верно установленый идентификатор пользователя. Осзнакомтесь со справкой /help");
                 }
-                for (ListResponseObject listResponseObject : list) {
+                for (ListResponseObject listResponseObject : listAsList) {
                     if (this.eventResponseObject!=null)
                         this.eventResponseObject.onSendMessage(rs.getLong(2), listResponseObject);
                 }
@@ -431,4 +435,24 @@ public class DatabaseManager {
         }
         return result;
     }
+    
+    /**
+     * Указывает идентификатор чата админа
+     * @return 
+     */
+    public Long getChatIdForAdmin(){
+        Long result = 0L;
+        try {
+            Statement statmt = connection.createStatement();
+            ResultSet rs = statmt.executeQuery("SELECT chat_id FROM users ORDER BY id ASC LIMIT 1"); 
+            if (rs.next()) {
+                result = rs.getLong(1);
+            }
+            rs.close();
+            statmt.close();
+        } catch (SQLException ex) {
+            BotLogger.error(LOGTAG, ex);
+        }
+        return result;
+    }    
 }

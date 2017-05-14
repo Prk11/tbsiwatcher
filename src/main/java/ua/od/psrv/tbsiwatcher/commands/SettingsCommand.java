@@ -6,14 +6,9 @@
 package ua.od.psrv.tbsiwatcher.commands;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.User;
@@ -73,7 +68,8 @@ public class SettingsCommand extends BotCommand {
                                 answer.setText("Пользователя подписан");
                             } catch (Exception ex) {
                                 BotLogger.error(LOGTAG, ex);
-                            }   break;
+                            }   
+                            break;
                         case "no":
                         case "false":
                         case "0":
@@ -84,15 +80,31 @@ public class SettingsCommand extends BotCommand {
                                 answer.setText("Пользователя отписан");
                             } catch (Exception ex) {
                                 BotLogger.error(LOGTAG, ex);
-                            }   break;
+                            }   
+                            break;
                         default:
                             answer.setText("Не корректный задан параметр. Ознакомтесь со справкой /help");
                             break;
                     }
-                }                
-              
-                            
-                else if (arguments[0].trim().toLowerCase().equals("get") && arguments.length==2) {
+                } else if (arguments[0].trim().toLowerCase().equals("logon")) {              
+                    if ((arguments.length==3)&& (arguments[1].contains("@") || arguments[2].contains("@"))) {
+                        
+                    } else if (arguments.length==1){
+                        try {
+                            answer.setText("Введите E-Mail:");
+                        } 
+                        catch (Exception ex) {
+                            BotLogger.error(LOGTAG, ex);
+                        } 
+                    } else {
+                        try {
+                                answer.setText("Не верный формат команды. Ознакомтесь со справкой /help ");
+                        } 
+                        catch (Exception ex) {
+                                BotLogger.error(LOGTAG, ex);
+                        }  
+                    }                        
+                } else if (arguments[0].trim().toLowerCase().equals("get") && arguments.length==2) {
                     answer.enableMarkdown(false);    
                     try {
                         String result = "Результат выполнения команды get:\n";

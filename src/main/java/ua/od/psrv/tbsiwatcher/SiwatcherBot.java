@@ -8,8 +8,6 @@ package ua.od.psrv.tbsiwatcher;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.api.objects.Message;
@@ -85,6 +83,11 @@ public class SiwatcherBot extends TelegramLongPollingCommandBot {
                                 simpleSendMessage(ChatId, Message.toString(), false);
                             } catch (TelegramApiException ex1) {
                                 BotLogger.error(LOGTAG, ex1);
+                                try {                                    
+                                    simpleSendMessage(Application.databaseManager.getChatIdForAdmin(), "Ошибка диспетчера для чата: "+ ChatId.toString(), false);
+                                } catch (TelegramApiException ex2) {
+                                    BotLogger.error(LOGTAG, ex2);
+                                }
                             }
                         }
                     }
@@ -236,7 +239,22 @@ public class SiwatcherBot extends TelegramLongPollingCommandBot {
                     BotLogger.error(LOGTAG, ex);
                 }               
                 System.exit(1);
-            } else if (wordCallbackQuery.startsWith("setuserid")) {
+            } 
+            else if (message.getText().equals("Введите E-Mail:")) {
+                try {
+                    simpleSendMessage(message.getChatId(),"Введите пароль siwatcher:", false);
+                } catch (TelegramApiException ex) {
+                    BotLogger.error(LOGTAG, ex);
+                }           
+            }
+            else if (message.getText().equals("Введите пароль siwatcher:")) {
+                try {
+                    simpleSendMessage(message.getChatId(),"Введите пароль siwatcher:", false);
+                } catch (TelegramApiException ex) {
+                    BotLogger.error(LOGTAG, ex);
+                }           
+            }
+            else if (wordCallbackQuery.startsWith("setuserid")) {
                 wordCallbackQuery="";
                 if (message.getText().trim().equals(Application.databaseManager.getSiwatcherUserId(ChatId))) return;
                 try {

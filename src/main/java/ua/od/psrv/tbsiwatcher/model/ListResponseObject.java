@@ -16,7 +16,7 @@ import ua.od.psrv.tbsiwatcher.Application;
  *
  * @author Prk
  */
-public class ListResponseObject {
+public class ListResponseObject implements Comparable<ListResponseObject> {
 
     private Integer event;
     private Long time;
@@ -253,6 +253,11 @@ public class ListResponseObject {
 
     public void setTexts(String texts) {
         this.texts = texts;
+    }
+
+    @Override
+    public int compareTo(ListResponseObject o) {
+        return (int) (this.getTime()-o.getTime());
     }
 
 }

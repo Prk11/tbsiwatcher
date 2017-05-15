@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.telegram.telegrambots.logging.BotLogger;
 import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
 import ua.od.psrv.tbsiwatcher.events.EventSendResponseObject;
@@ -29,7 +31,7 @@ import ua.od.psrv.tbsiwatcher.events.EventSendText;
 public class DatabaseManager {
     
     private static final String LOGTAG = "DATABASEMANAGER";
-     
+    
     private Connection connection = null;
     
     public DatabaseManager() {        
@@ -123,12 +125,23 @@ public class DatabaseManager {
      */
     public synchronized void DispatchMessageBySubscribe() {
         try {
+            Long timezoneDefault = 10800L;
+            try {
+                timezoneDefault = Long.parseLong(Application.settings.getProperties().getProperty("timezone"));
+            } catch (Exception ex) {}
+            
             Statement statmt = connection.createStatement();
-            ResultSet rs = statmt.executeQuery("select u.user_id, u.chat_id from users u inner join settings s on (u.id=s.userid) where ([key]='subscribe') and ([valuekey]='true')");
+            ResultSet rs = statmt.executeQuery("select u.user_id, u.chat_id, u.id from users u inner join settings s on (u.id=s.userid) where ([key]='subscribe') and ([valuekey]='true')");
             while (rs.next()) {
                 Set<ListResponseObject> list=null;
                 List<ListResponseObject> listAsList=null;
+                Long timezone = timezoneDefault;
                 try {
+                    try {                    
+                        timezone = Long.parseLong(Application.databaseManager.getSetting(rs.getInt(3), "timezone"));
+                    } catch (Exception ex) {
+                        timezone=timezoneDefault;
+                    }
                     list = SiwatcherManager.getResponse(rs.getString(1), true);
                     listAsList = new ArrayList<>(list);
                     Collections.sort(listAsList);
@@ -136,10 +149,17 @@ public class DatabaseManager {
                     BotLogger.error(LOGTAG, ex);
                     if (this.eventSendText!=null)
                         this.eventSendText.onSendMessage(rs.getLong(2), "Не верно установленый идентификатор пользователя. Осзнакомтесь со справкой /help");
+                } catch (NumberFormatException ex) {
+                    BotLogger.error(LOGTAG, ex);
                 }
                 for (ListResponseObject listResponseObject : listAsList) {
-                    if (this.eventResponseObject!=null)
+                    if (this.eventResponseObject!=null) {
+                        if (listResponseObject.getTime()!=null) {
+                            listResponseObject.setTime(listResponseObject.getTime()-timezoneDefault+timezone);
+                        }
                         this.eventResponseObject.onSendMessage(rs.getLong(2), listResponseObject);
+                        Thread.sleep(40);
+                    }
                 }
             }
             rs.close();
@@ -254,7 +274,8 @@ public class DatabaseManager {
             else
                 _part_sql_for_rewrite = "OR IGNORE ";
             // Подписка на обновления
-            statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + UserId.toString() + ",'subscribe','true')");          
+            statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
+                    UserId.toString() + ",'subscribe','true')");          
             // Указание на какие события мы подписались
             statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
                     UserId.toString() + ",'subscribe.type.text_deleted','true')");          
@@ -264,6 +285,12 @@ public class DatabaseManager {
                     UserId.toString() + ",'subscribe.type.text_update.size_incremented','true')");          
             statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
                     UserId.toString() + ",'subscribe.type.author_typed','true')");                      
+            statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
+                    UserId.toString() + ",'timezone','10800')");                      
+            statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
+                    UserId.toString() + ",'longitude','0')");                      
+            statmt.executeUpdate("insert "+_part_sql_for_rewrite+"into settings (userid,key,valuekey) values (" + 
+                    UserId.toString() + ",'latitude','0')");                      
             statmt.close();
         } catch (SQLException ex) {
             BotLogger.error(LOGTAG, ex);
@@ -294,28 +321,53 @@ public class DatabaseManager {
         try {
             Statement statmt = connection.createStatement();
             ResultSet rs = statmt.executeQuery("select [valuekey] from settings where ([key]='version') and (userid=0)"); 
+            String version="";
             if (rs.next()) {
-                rs.close();
-                return;
-            }
-            rs.close();
-            statmt.executeUpdate("create table new_events (id INTEGER PRIMARY KEY AUTOINCREMENT, [event_id] INTEGER NOT NULL, [userid] INTEGER NOT NULL, timeread TIMESTAMP)");
-            statmt.executeUpdate("INSERT INTO new_events ([event_id],[userid],timeread) SELECT [event_id],[userid],timeread FROM events");
-            statmt.executeUpdate("DROP TABLE events");
-            statmt.executeUpdate("ALTER TABLE new_events RENAME TO events");
-            statmt.executeUpdate("create unique index ind_userid_event on [events]([userid],[event_id])");
-            statmt.executeUpdate("create unique index ind_userid_key on [settings]([userid],[key])");
-            statmt.executeUpdate("delete from settings where ([key]='version')"); 
-            statmt.executeUpdate("insert into settings ([valuekey],[key],userid) values ('1.1.0', 'version', 0 )"); 
-            rs = statmt.executeQuery("select id from users"); 
-            while (rs.next()) {                
-                try {
-                    this.setDefaultUserSettings(rs.getInt(1), false);
-                } catch (Exception ex) {
-                    BotLogger.error(LOGTAG, ex);
+                version=rs.getString(1);
+                if (version=="") {
+                    rs.close();
+                    return;
                 }
             }
             rs.close();
+            switch (version) {
+                case "": {
+                    statmt.executeUpdate("create table new_events (id INTEGER PRIMARY KEY AUTOINCREMENT, [event_id] INTEGER NOT NULL, [userid] INTEGER NOT NULL, timeread TIMESTAMP)");
+                    statmt.executeUpdate("INSERT INTO new_events ([event_id],[userid],timeread) SELECT [event_id],[userid],timeread FROM events");
+                    statmt.executeUpdate("DROP TABLE events");
+                    statmt.executeUpdate("ALTER TABLE new_events RENAME TO events");
+                    statmt.executeUpdate("create unique index ind_userid_event on [events]([userid],[event_id])");
+                    statmt.executeUpdate("create unique index ind_userid_key on [settings]([userid],[key])");
+                    statmt.executeUpdate("delete from settings where ([key]='version')"); 
+                    statmt.executeUpdate("insert into settings ([valuekey],[key],userid) values ('1.1.0', 'version', 0 )"); 
+                    rs = statmt.executeQuery("select id from users"); 
+                    while (rs.next()) {                
+                        try {
+                            this.setDefaultUserSettings(rs.getInt(1), false);
+                        } catch (Exception ex) {
+                            BotLogger.error(LOGTAG, ex);
+                        }
+                    }
+                    rs.close();
+                }
+                case "1.1.0" : {
+                    statmt.executeUpdate("update settings set [valuekey]='1.2.1' where ([key]='version')"); 
+                    statmt.executeUpdate("update settings set [valuekey]='true' where ([valuekey]='on')"); 
+                    statmt.executeUpdate("update settings set [valuekey]='false' where ([valuekey]='off')"); 
+                }
+                case "1.2.1" : {
+                    statmt.executeUpdate("update settings set [valuekey]='1.2.2' where ([key]='version')"); 
+                    rs = statmt.executeQuery("select id from users"); 
+                    while (rs.next()) {                
+                        try {
+                            this.setDefaultUserSettings(rs.getInt(1), false);
+                        } catch (Exception ex) {
+                            BotLogger.error(LOGTAG, ex);
+                        }
+                    }
+                    rs.close();                    
+                }
+            }
             statmt.close();
         } catch (SQLException ex) {
             BotLogger.error(LOGTAG, ex);

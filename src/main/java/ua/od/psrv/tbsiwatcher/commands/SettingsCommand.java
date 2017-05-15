@@ -13,7 +13,10 @@ import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.bots.AbsSender;
 import org.telegram.telegrambots.bots.commands.BotCommand;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
@@ -106,25 +109,85 @@ public class SettingsCommand extends BotCommand {
                     }                        
                 } else if (arguments[0].trim().toLowerCase().equals("get") && arguments.length==2) {
                     answer.enableMarkdown(false);    
+                    String key = arguments[1].trim();                   
                     try {
-                        String result = "Результат выполнения команды get:\n";
-                        result += Application.databaseManager.getSettings(UID, arguments[1].trim());
-                        answer.setText(result);
+                        if (key.toLowerCase().equals("location")) {
+                            String latitude= Application.databaseManager.getSettings(UID, "latitude").trim();
+                            String longitude= Application.databaseManager.getSettings(UID, "longitude").trim();
+                            String locationMessage = "Ваше месторасположение:\n";
+                            locationMessage += "https://www.google.com/maps/@"+latitude+","+longitude+",12z";
+                            answer.setText(locationMessage);                            
+                        } else {
+                            String result = "Результат выполнения команды get:\n";
+                            result += Application.databaseManager.getSettings(UID, key);
+                            answer.setText(result);
+                        }
                     } catch (Exception ex) {
                         answer.setText(ex.getMessage());
                     }
                 }
-                else if (arguments[0].trim().toLowerCase().equals("set") && arguments.length>2) {
+                else if (arguments[0].trim().toLowerCase().equals("set") && arguments.length>=2) {
                     answer.enableMarkdown(false);    
                     try {
                         String value = "";
                         for (int i = 2; i < arguments.length; i++) {
                             value+=arguments[i]+" ";
-                        }                                               
-                        Application.databaseManager.setSetting(UID, arguments[1].trim(),value.trim());
-                        answer.setText("Выполнено!");
+                        }  
+                        value=value.trim();
+                        String key = arguments[1].trim();
+                        if (key.toLowerCase().equals("location")) {
+                            try {                                 
+                                answer.setText("Ваше месторасположение");
+                                ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+                                List<KeyboardRow> keyboardRow = new ArrayList<>();
+                                keyboard.setKeyboard(keyboardRow);
+                                keyboardRow.add(new KeyboardRow());
+                                KeyboardButton keyboardButton = new KeyboardButton("Оправить месторасположение");
+                                keyboardButton.setRequestLocation(Boolean.TRUE);
+                                keyboardRow.get(0).add(keyboardButton);
+                                answer.setReplyMarkup(keyboard);          
+                            } catch (Exception ex) {
+                                BotLogger.error(LOGTAG, ex);
+                                answer.setText("Не выполнено!");
+                            }                            
+                        }
+                        else if (key.toLowerCase().startsWith("subscribe")) {
+                            switch (value) {
+                                case "yes":
+                                case "true":
+                                case "1":
+                                case "да":
+                                case "on":
+                                    try {
+                                        Application.databaseManager.setSetting(UID, key, "true");
+                                        answer.setText("Выполнено!");
+                                    } catch (Exception ex) {
+                                        BotLogger.error(LOGTAG, ex);
+                                        answer.setText("Не выполнено!");
+                                    }   
+                                    break;
+                                case "no":
+                                case "false":
+                                case "0":
+                                case "нет":
+                                case "off":
+                                    try {
+                                        Application.databaseManager.setSetting(UID, key, "false");
+                                        answer.setText("Выполнено!");
+                                    } catch (Exception ex) {
+                                        BotLogger.error(LOGTAG, ex);
+                                        answer.setText("Не выполнено!");
+                                    }   
+                                    break;
+                            }
+                            
+                        }
+                        else{ 
+                            Application.databaseManager.setSetting(UID, key,value);
+                            answer.setText("Выполнено!");
+                        }
                     } catch (Exception ex) {
-                        answer.setText(ex.getMessage());
+                        answer.setText("Не выполнено!");
                     }
                 }
                 else if (arguments[0].trim().toLowerCase().equals("execute")) {
@@ -141,7 +204,7 @@ public class SettingsCommand extends BotCommand {
                         answer.setText(ex.getMessage());
                     }
                 }                
-                else if (arguments[0].trim().toLowerCase().equals("update") && arguments[1].trim().toLowerCase().equals("version")) {
+                else if (arguments[0].trim().toLowerCase().equals("update") && (arguments.length>1) && arguments[1].trim().toLowerCase().equals("version")) {
                     try {          
                         Application.databaseManager.updateVersion();
                         answer.setText("Обновление базы завершено");
@@ -157,6 +220,11 @@ public class SettingsCommand extends BotCommand {
                         answer.setText(ex.getMessage());
                     }
                 }
+//                else if (arguments[0].trim().toLowerCase().equals("test")) {
+//                    answer.enableMarkdown(false); 
+//                    answer.enableWebPagePreview();
+//                    answer.setText("https://www.google.com/maps?q=46.496420,30.724046&ll=46.496420,30.724046&z=16");
+//                }
             }   
             absSender.sendMessage(answer);
         } catch (TelegramApiException e) {

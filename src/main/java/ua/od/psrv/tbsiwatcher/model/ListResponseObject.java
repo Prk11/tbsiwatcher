@@ -168,7 +168,7 @@ public class ListResponseObject implements Comparable<ListResponseObject> {
 
     public String getTimeFormatting() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yy HH:mm");
-        return sdf.format(new Date(time * 1000L));
+        return sdf.format(new Date(getTime() * 1000L));
     }
 
     public void setTime(Long time) {

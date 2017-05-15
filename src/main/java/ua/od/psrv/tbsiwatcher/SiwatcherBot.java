@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.api.objects.Location;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingCommandBot;
@@ -23,6 +24,7 @@ import ua.od.psrv.tbsiwatcher.commands.StartCommand;
 import ua.od.psrv.tbsiwatcher.commands.ToSendMessageAllUsersCommand;
 import ua.od.psrv.tbsiwatcher.events.EventSendResponseObject;
 import ua.od.psrv.tbsiwatcher.events.EventSendText;
+import ua.od.psrv.tbsiwatcher.model.GoogleTimezoneLocation;
 import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
 
 /**
@@ -84,7 +86,7 @@ public class SiwatcherBot extends TelegramLongPollingCommandBot {
                             } catch (TelegramApiException ex1) {
                                 BotLogger.error(LOGTAG, ex1);
                                 try {                                    
-                                    simpleSendMessage(Application.databaseManager.getChatIdForAdmin(), "Ошибка диспетчера для чата: "+ ChatId.toString(), false);
+                                    simpleSendMessage(Application.databaseManager.getChatIdForAdmin(), "Ошибка диспетчера для чата (EventSendResponseObject): "+ ChatId.toString(), false);
                                 } catch (TelegramApiException ex2) {
                                     BotLogger.error(LOGTAG, ex2);
                                 }
@@ -99,6 +101,11 @@ public class SiwatcherBot extends TelegramLongPollingCommandBot {
                     simpleSendMessage(ChatId, Message, true);
                 } catch (TelegramApiException ex) {
                     BotLogger.error(LOGTAG, ex);
+                    try {                                    
+                        simpleSendMessage(Application.databaseManager.getChatIdForAdmin(), "Ошибка диспетчера для чата (EventSendText): "+ ChatId.toString(), false);
+                    } catch (TelegramApiException ex2) {
+                        BotLogger.error(LOGTAG, ex2);
+                    }
                 }
             }
         });
@@ -122,6 +129,19 @@ public class SiwatcherBot extends TelegramLongPollingCommandBot {
         Message message = update.getMessage();
         Integer UID = Application.databaseManager.getUserId(ChatId);
         
+        if (message!=null) {
+            try {
+                Location location = message.getLocation();
+                if (location!=null) {
+                    Application.databaseManager.setSetting(UID, "longitude", location.getLongitude().toString());
+                    Application.databaseManager.setSetting(UID, "latitude", location.getLatitude().toString());
+                    GoogleTimezoneLocation googleTimezoneLocation = SiwatcherManager.getResponseLocation(location);
+                    Application.databaseManager.setSetting(UID, "timezone", googleTimezoneLocation.getRawOffset().toString());
+                }
+            } catch (Exception ex) {
+                BotLogger.error(LOGTAG, ex);
+            }
+        }
         if (update.hasCallbackQuery()) {
             wordCallbackQuery=update.getCallbackQuery().getData();
             

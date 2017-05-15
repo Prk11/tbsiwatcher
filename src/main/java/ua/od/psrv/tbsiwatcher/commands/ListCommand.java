@@ -38,12 +38,26 @@ public class ListCommand extends BotCommand {
 
     @Override
     public void execute(AbsSender absSender, User user, Chat chat, String[] arguments) {
+        Long timezoneDefault = 10800L;
+        try {
+            timezoneDefault = Long.parseLong(Application.settings.getProperties().getProperty("timezone"));
+        } catch (Exception ex) {}
+        Long timezone = timezoneDefault;
+        try {                    
+            Integer UID = Application.databaseManager.getUserId(chat.getId());
+            timezone = Long.parseLong(Application.databaseManager.getSetting(UID, "timezone"));
+        } catch (Exception ex) {
+            timezone=timezoneDefault;
+        }
         try {
             String UserId = Application.databaseManager.getSiwatcherUserId(chat.getId());
             Set<ListResponseObject> list = SiwatcherManager.getResponse(UserId, false);
             List<ListResponseObject> listAsList = new ArrayList<>(list);
             Collections.sort(listAsList);
             for (ListResponseObject listResponseObject : listAsList) {
+                if (listResponseObject.getTime()!=null) {
+                    listResponseObject.setTime(listResponseObject.getTime()-timezoneDefault+timezone);
+                }
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setChatId(chat.getId().toString());
                 try {
@@ -87,6 +101,7 @@ public class ListCommand extends BotCommand {
                         }
                     }
                  }
+                Thread.sleep(40);
             }
             if (list.isEmpty()) {
                 SendMessage sendMessage = new SendMessage();

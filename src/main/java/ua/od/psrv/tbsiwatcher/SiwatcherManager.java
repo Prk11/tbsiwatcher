@@ -17,7 +17,9 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.telegrambots.api.objects.Location;
 import org.telegram.telegrambots.logging.BotLogger;
+import ua.od.psrv.tbsiwatcher.model.GoogleTimezoneLocation;
 import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
 
 /**
@@ -25,7 +27,7 @@ import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
  * @author Prk
  */
 public class SiwatcherManager {
-    private static final String LOGTAG = "DATABASEMANAGER";
+    private static final String LOGTAG = "SIWATCHERMANAGER";
     
     
     public static Set<ListResponseObject> getResponse(String user_id, Boolean filtering) throws IOException, InterruptedException {
@@ -74,4 +76,21 @@ public class SiwatcherManager {
         }
         return result;
     }
+    
+     public static GoogleTimezoneLocation getResponseLocation(Location location) throws IOException, InterruptedException {
+        URL url = new URL(String.format(
+            Application.settings.getProperties().getProperty("url2"),
+            location.getLatitude().toString()+","+location.getLongitude().toString(),
+            Application.settings.getProperties().getProperty("appid2")));
+        URLConnection conn = url.openConnection();
+        InputStream is = conn.getInputStream();
+        if ("gzip".equals(conn.getContentEncoding())) {
+            is = new GZIPInputStream(is);
+        }
+        String resultJson = IOUtils.toString(is, Charset.defaultCharset());
+        JSONObject jsonObject = new JSONObject(resultJson);
+        ObjectMapper objectMapper = new ObjectMapper();
+        GoogleTimezoneLocation result=objectMapper.readValue(jsonObject.toString(), GoogleTimezoneLocation.class);
+        return result; 
+     }   
 }

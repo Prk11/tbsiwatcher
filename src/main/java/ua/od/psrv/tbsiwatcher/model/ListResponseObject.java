@@ -74,6 +74,15 @@ public class ListResponseObject implements Comparable<ListResponseObject> {
                 result += "\n";               
             }
             else if (this.getTitle()!=null) result += this.getTitle()+ "\n";
+            if ((this.getRating()!=null) && (!"".equals(this.getRating()))) {
+                String _$=this.getRating().replace(',', '.').trim().replaceFirst("\\*.*", "");
+                Float rating=Float.parseFloat(_$);
+                String stars="";
+                for (int i = 5; i < Math.round(rating); i++) {
+                    stars+="☀️";
+                }
+                result += "*Оценка: *_(" + this.getRating()+ ")_ " + stars + "\n";
+            }
             if (!"".equals(this.getDescription())) result += "" + this.getDescription() + "\n";
             if (this.getSize() != null) {
                     if (this.getOldsize() != null) {
@@ -125,6 +134,15 @@ public class ListResponseObject implements Comparable<ListResponseObject> {
                 result += "\n";               
             }
             else if (this.getTitle()!=null) result += this.getTitle()+ "\n";
+            if ((this.getRating()!=null) && (!"".equals(this.getRating()))) {
+                String _$=this.getRating().replace(',', '.').trim().replaceFirst("\\*.*", "");
+                Float rating=Float.parseFloat(_$);
+                String stars="";
+                for (int i = 5; i < Math.round(rating); i++) {
+                    stars+="☀️";
+                }
+                result += "*Оценка: *_(" + this.getRating()+ ")_ " + stars + "\n";
+            }
             if (!"".equals(this.getDescription())) result += "_" + this.getDescription() + "_\n";
             if (this.getSize() != null) {
                     if (this.getOldsize() != null) {

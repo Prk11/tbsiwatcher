@@ -33,6 +33,7 @@ public class HelpCommand extends BotCommand {
             answer.setChatId(chat.getId().toString());
             answer.enableMarkdown(false);
             String message = "Бот мониторинга поступлений по подписке на сайте https://siwatcher.ru/ \n";
+            message += "Ветка форума для обсуждений http://forum.siwatcher.ru/thread-17.html";
             answer.setText(message);
             absSender.sendMessage(answer);
 
@@ -56,6 +57,12 @@ public class HelpCommand extends BotCommand {
             message += " */settings set timeout* - `Позволяет указать Ваш часовоq пояс. Указывается в секундах, например часовой пояс +3 часа, тогда необходимо указать 10800 (3*60*60)`\n";
             message += " */settings get timeout* - `Возвращает установленый часовой пояс в секундах`\n";
             message += " */list* - `Список поступивших произведений в ленту обновлений`\n";
+            message += " */list [[page|pages|paginate] [#]]* - `Разбивка списка обновлений по странично`\n";
+            message += " */list [autofiltering=yes|autofiltering=no]* - `Принудительное включение/отключение автоматической фильтрации`\n";
+            message += " */list [lastday]* - `Вывод всех обновлений за последние сутки`\n";
+            message += " */list [[fromdate|fromday] [dd.mm.yyyy]]* - `Вывод всех обновлений с указаной даты`\n";
+            message += " */list [[random] [#]]* - `Вывод указаного количества случайных обновлений`\n";
+            message += " `Ключи команды /list можно комбинировать`\n";
             message += " */countusers* - `Количество зарегистрированных пользователей`\n";
             answer.setText(message);
             absSender.sendMessage(answer);

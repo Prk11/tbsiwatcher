@@ -17,8 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.telegram.telegrambots.logging.BotLogger;
 import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
 import ua.od.psrv.tbsiwatcher.events.EventSendResponseObject;
@@ -126,6 +124,7 @@ public class DatabaseManager {
     public synchronized void DispatchMessageBySubscribe() {
         try {
             Long timezoneDefault = 10800L;
+            Integer pagesize = Integer.parseInt(Application.settings.getProperties().getProperty("pagesize"));
             try {
                 timezoneDefault = Long.parseLong(Application.settings.getProperties().getProperty("timezone"));
             } catch (Exception ex) {}
@@ -152,15 +151,17 @@ public class DatabaseManager {
                 } catch (NumberFormatException ex) {
                     BotLogger.error(LOGTAG, ex);
                 }
-                for (ListResponseObject listResponseObject : listAsList) {
-                    if (this.eventResponseObject!=null) {
-                        if (listResponseObject.getTime()!=null) {
-                            listResponseObject.setTime(listResponseObject.getTime()-timezoneDefault+timezone);
-                        }
-                        this.eventResponseObject.onSendMessage(rs.getLong(2), listResponseObject);
-                        Thread.sleep(40);
-                    }
-                }
+                DispatchMessageBySubscribeHelper helper = new DispatchMessageBySubscribeHelper();
+                helper.setCharId(rs.getLong(2));
+                helper.setEventResponseObject(eventResponseObject);
+                helper.setEventSendText(eventSendText);
+                helper.setTimezone(timezone);
+                helper.setTimezoneDefault(timezoneDefault);
+                helper.setPagesize(pagesize);
+                helper.setListAsList(listAsList);
+//                Thread thread = new Thread(helper);
+//                thread.start();
+                helper.run();
             }
             rs.close();
             statmt.close();
@@ -169,6 +170,7 @@ public class DatabaseManager {
         }
     }
     
+
     /**
      * Возвращает идентификатор пользователя
      * @param ChatId
@@ -369,6 +371,9 @@ public class DatabaseManager {
                 }
                 case "1.2.2" : {
                     statmt.executeUpdate("update settings set [valuekey]='1.2.3' where ([key]='version')"); 
+                }
+                case "1.2.3" : {
+                    statmt.executeUpdate("update settings set [valuekey]='1.2.4' where ([key]='version')"); 
                 }
             }
             statmt.close();

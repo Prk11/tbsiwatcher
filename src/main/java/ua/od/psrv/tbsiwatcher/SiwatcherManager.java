@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -29,7 +30,14 @@ import ua.od.psrv.tbsiwatcher.model.ListResponseObject;
 public class SiwatcherManager {
     private static final String LOGTAG = "SIWATCHERMANAGER";
     
-    
+    /**
+     * Возвращает перечень обновлений в кабинете
+     * @param user_id
+     * @param filtering
+     * @return
+     * @throws IOException
+     * @throws InterruptedException 
+     */
     public static Set<ListResponseObject> getResponse(String user_id, Boolean filtering) throws IOException, InterruptedException {
         Set<ListResponseObject> result = new HashSet();
         URL url = new URL(String.format(
@@ -69,15 +77,29 @@ public class SiwatcherManager {
                 continue;
             }
             if (filtering && !SubscribeTypeText_deleted && (lro.getType()==null)) continue;
-            if (filtering && !SubscribeTypeText_updated && (lro.getType()==1)) continue;
-            if (filtering && SubscribeTypeText_updatedSize_incremented && (lro.getType()==1) && (lro.getSize()<=lro.getOldsize())) continue;
-            if (filtering && !SubscribeTypeAuthor_typed && (lro.getType()==2)) continue;
+            if (filtering && !SubscribeTypeText_updated && (lro.getType()!=null) &&(lro.getType()==1)) continue;
+            if (filtering && 
+                    SubscribeTypeText_updated && 
+                    SubscribeTypeText_updatedSize_incremented && 
+                    (lro.getType()!=null) &&
+                    (lro.getType()==1) && 
+                    (lro.getSize()!=null) && 
+                    (lro.getOldsize()!=null) && 
+                    (lro.getSize()<=lro.getOldsize())) continue;
+            if (filtering && !SubscribeTypeAuthor_typed && (lro.getType()!=null) && (lro.getType()==2)) continue;
             result.add(lro);
         }
         return result;
     }
     
-     public static GoogleTimezoneLocation getResponseLocation(Location location) throws IOException, InterruptedException {
+    /**
+     * Возвращает часовой пояс в указаной локации
+     * @param location Широта и долгота
+     * @return
+     * @throws IOException
+     * @throws InterruptedException 
+     */
+    public static GoogleTimezoneLocation getResponseLocation(Location location) throws IOException, InterruptedException {
         URL url = new URL(String.format(
             Application.settings.getProperties().getProperty("url2"),
             location.getLatitude().toString()+","+location.getLongitude().toString(),
@@ -93,4 +115,64 @@ public class SiwatcherManager {
         GoogleTimezoneLocation result=objectMapper.readValue(jsonObject.toString(), GoogleTimezoneLocation.class);
         return result; 
      }   
+     
+    /**
+     * Список книг за последний день
+     * @return
+     * @throws IOException
+     * @throws InterruptedException 
+     */
+     public static Set<ListResponseObject> getResponseByDay() throws IOException, InterruptedException {
+        Set<ListResponseObject> result = new HashSet();
+        URL url = new URL(String.format(
+            Application.settings.getProperties().getProperty("url3"),
+            Application.settings.getProperties().getProperty("appid")));
+        URLConnection conn = url.openConnection();
+        InputStream is = conn.getInputStream();
+        if ("gzip".equals(conn.getContentEncoding())) {
+            is = new GZIPInputStream(is);
+        }
+        String resultJson = IOUtils.toString(is, Charset.defaultCharset());
+        JSONObject jsonObjects = new JSONObject(resultJson);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JSONArray jsonArray = jsonObjects.getJSONArray("response");
+        ListResponseObject lro;
+        for (int i = 0; i < jsonArray.length(); i++) {
+            lro = objectMapper.readValue(jsonArray.get(i).toString(), ListResponseObject.class);
+            result.add(lro);
+        }
+        return result;
+     }
+     
+     /**
+      * Список всех последних изменений текстов с заданной даты
+      * @param date
+      * @return
+      * @throws IOException
+      * @throws InterruptedException 
+      */
+     public static Set<ListResponseObject> getResponseFromDay(Date date) throws IOException, InterruptedException {
+        Set<ListResponseObject> result = new HashSet();
+        Long unixtime = date.getTime()/1000L;
+        URL url = new URL(String.format(
+            Application.settings.getProperties().getProperty("url4"),
+            unixtime.toString(),
+            Application.settings.getProperties().getProperty("appid")
+            ));
+        URLConnection conn = url.openConnection();
+        InputStream is = conn.getInputStream();
+        if ("gzip".equals(conn.getContentEncoding())) {
+            is = new GZIPInputStream(is);
+        }
+        String resultJson = IOUtils.toString(is, Charset.defaultCharset());
+        JSONObject jsonObjects = new JSONObject(resultJson);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JSONArray jsonArray = jsonObjects.getJSONArray("response");
+        ListResponseObject lro;
+        for (int i = 0; i < jsonArray.length(); i++) {
+            lro = objectMapper.readValue(jsonArray.get(i).toString(), ListResponseObject.class);
+            result.add(lro);
+        }
+        return result;
+     }    
 }

@@ -53,7 +53,7 @@ public class HelpCommand extends BotCommand {
             message += " */settings set subscribe.type.text_update.size_incremented on | off* -`Включает или отключает Информирование только об увеличении объема текста`\n";
             message += " */settings set subscribe.type.author_typed on | off* - `Включает или отключает Информирование о появлении новых книг у авторов в подписке`\n";
             message += " */settings set location* - `Позволяет указать Ваше местоположение. Необходимо для определения часового пояса. (Работает пока только на мобильных телефонах)`\n";
-            message += " */settings пet location* - `Возвращает ссылку на карту с местоположением`\n";
+            message += " */settings get location* - `Возвращает ссылку на карту с местоположением`\n";
             message += " */settings set timeout* - `Позволяет указать Ваш часовоq пояс. Указывается в секундах, например часовой пояс +3 часа, тогда необходимо указать 10800 (3*60*60)`\n";
             message += " */settings get timeout* - `Возвращает установленый часовой пояс в секундах`\n";
             message += " */list* - `Список поступивших произведений в ленту обновлений`\n";

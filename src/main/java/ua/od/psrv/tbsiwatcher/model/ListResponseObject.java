@@ -18,6 +18,156 @@ import ua.od.psrv.tbsiwatcher.Application;
  */
 public class ListResponseObject implements Comparable<ListResponseObject> {
 
+    public final static int SITE_SAMLIB=1;
+    public final static int SITE_SIWATCHER_COLLECTION=2;
+    public final static int SITE_AUTHOR_TODAY=3;
+    
+     //константы типов оповещений
+    /** 
+     * изменился размер книги
+     */
+    public final static int UTYPE_EVENT_CHANGE_SIZE=1; 
+    
+    /**
+     * изменилась аннотация
+     */
+    public final static int UTYPE_EVENT_CHANGE_DESC=2;
+    
+    /**
+     * изменился жанр
+     */
+    public final static int UTYPE_EVENT_CHANGE_GENRE=3;
+    
+    /**
+     * изменилось название текста
+     */
+    public final static int UTYPE_EVENT_CHANGE_TITLE=4;
+    
+    /**
+     * изменилось имя автора
+     */
+    public final static int UTYPE_EVENT_CHANGE_AUTHOR=5;
+    
+    /**
+     * добавлен новый текст (общий признак, если не известен более точный)
+     */
+    public final static int UTYPE_EVENT_NEW_TEXT=6;
+    
+    /**
+     * удалён текст (общий признак, если не известен более точный)
+     */
+    public final static int UTYPE_EVENT_DEL_TEXT=7;
+    
+    /**
+     * создание книги
+     */
+    public final static int UTYPE_EVENT_CREATE_TEXT=20;
+    
+    /**
+     * первая публикация
+     */
+    public final static int UTYPE_EVENT_FIRST_PUB_TEXT=21;
+    
+    /**
+     * автор убрал книгу в черновик
+     */
+    public final static int UTYPE_EVENT_A_HIDE_TEXT=22;
+    
+    /**
+     * автор опубликовал книгу из черновика
+     */
+    public final static int UTYPE_EVENT_A_UNHIDE_TEXT=23;
+    
+    /**
+     * автор удалил книгу
+     */
+    public final static int UTYPE_EVENT_A_DEL_TEXT=24;
+    
+    /**
+     * книга помечена как "завершенная"
+     */
+    public final static int UTYPE_EVENT_TEXT_FINISHED=25;
+    
+    /**
+     * книга помечена как "в процессе"
+     */
+    public final static int UTYPE_EVENT_TEXT_PROGRESS=26;
+
+    /**
+     * начала действовать скидка
+     */
+    public final static int UTYPE_EVENT_DISCOUNT_START=30;
+
+    /**
+     * закончилось действие скидки
+     */
+    public final static int UTYPE_EVENT_DISCOUNT_END=31;
+
+    /**
+     * размер скидки изменен
+     */
+    public final static int UTYPE_EVENT_DISCOUNT_CHANGE=32;
+
+    /**
+     * изменена цена книги
+     */
+    public final static int UTYPE_EVENT_PRICE_TEXT_UPD=35;
+
+    /**
+     * изменена цена главы книги
+     */
+    public final static int UTYPE_EVENT_PRICE_CHAPTER_UPD=36;
+
+    /**
+     * рекомендация администрации ресурса
+     */
+    public final static int UTYPE_EVENT_TEXT_RECOMMEND=37;
+
+    /**
+     * добавлена новая часть
+     */
+    public final static int UTYPE_EVENT_NEW_CHAPTER_TEXT=40;
+
+    /**
+     * часть была отредактирована (изменение текста)
+     */
+    public final static int UTYPE_EVENT_UPD_CHAPTER_TEXT=41;
+
+    /**
+     * глава была убрана в черновик
+     */
+    public final static int UTYPE_EVENT_HIDE_CHAPTER_TEXT=42;
+
+    /**
+     * глава была опубликована из черновика
+     */
+    public final static int UTYPE_EVENT_UNHIDE_CHAPTER_TEXT=43;
+
+    /**
+     * глава была удалена
+     */
+    public final static int UTYPE_EVENT_DEL_CHAPTER_TEXT=44;
+
+    /**
+     * глава была отредактирована
+     */
+    public final static int UTYPE_EVENT_RENAME_CHAPTER_TEXT=45;
+
+    /**
+     * модератор убрал книгу из общего доступа
+     */
+    public final static int UTYPE_EVENT_M_HIDE_TEXT=101;
+
+    /**
+     * модератор удалил книгу
+     */
+    public final static int UTYPE_EVENT_M_DEL_TEXT=102;
+
+    /**
+     * модератор вернул книгу в общий доступ 
+     */
+    public final static int UTYPE_EVENT_M_UNHIDE_TEXT=103;
+        
     private Integer event;
     private Long time;
     private String url;
@@ -30,6 +180,8 @@ public class ListResponseObject implements Comparable<ListResponseObject> {
     private Integer size;
     private Integer oldsize;
     private String texts;
+    private Integer site;
+    private Integer utype;
 
     
     private Boolean markup=true;
@@ -273,6 +425,24 @@ public class ListResponseObject implements Comparable<ListResponseObject> {
         this.texts = texts;
     }
 
+    public Integer getSite() {
+        return site;
+    }
+
+    public void setSite(Integer site) {
+        this.site = site;
+    }
+
+    public Integer getUtype() {
+        return utype;
+    }
+
+    public void setUtype(Integer utype) {
+        this.utype = utype;
+    }
+
+    
+    
     @Override
     public int compareTo(ListResponseObject o) {
         return (int) (this.getTime()-o.getTime());

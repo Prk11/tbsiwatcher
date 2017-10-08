@@ -375,6 +375,9 @@ public class DatabaseManager {
                 case "1.2.3" : {
                     statmt.executeUpdate("update settings set [valuekey]='1.2.4' where ([key]='version')"); 
                 }
+                case "1.2.4" : {
+                    statmt.executeUpdate("update settings set [valuekey]='1.2.5' where ([key]='version')"); 
+                }
             }
             statmt.close();
         } catch (SQLException ex) {
